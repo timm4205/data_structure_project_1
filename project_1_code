@@ -1,0 +1,487 @@
+#include<iostream>
+#include<fstream>
+#include<stdio.h>
+using namespace std;
+int m,n; 
+int land[100];
+struct row
+{
+	int count;
+	row *up;
+	row *down;
+	int *array;
+	int seq;
+	int clear = 0;	
+};
+row *row_base;
+row *row_heighest;
+int *get_array(int *array,int size)
+{
+	array = new int[size];
+	for(int i=0 ; i<size ; i++)
+	{
+		array[i] = 0;
+	}
+	return array;
+}
+int BOX[19][4][3] = {
+{{1,2,2},{2,1,2},{2,2,2},{2,3,2}},
+{{1,2,3},{2,1,3},{2,2,3},{3,2,3}},
+{{1,1,2},{1,2,2},{1,3,2},{2,2,2}},
+{{1,1,3},{2,1,3},{2,2,3},{3,1,3}},
+{{1,1,3},{1,2,3},{2,1,3},{3,1,3}},
+{{1,1,2},{2,1,2},{2,2,2},{2,3,2}},
+{{1,2,3},{2,2,3},{3,1,3},{3,2,3}},
+{{1,1,2},{1,2,2},{1,3,2},{2,3,2}},
+{{1,1,3},{1,2,3},{2,2,3},{3,2,3}},
+{{1,1,2},{1,2,2},{1,3,2},{2,1,2}},
+{{1,1,3},{2,1,3},{3,1,3},{3,2,3}},
+{{1,3,2},{2,1,2},{2,2,2},{2,3,2}},
+{{1,1,2},{1,2,2},{2,2,2},{2,3,2}},
+{{1,2,3},{2,1,3},{2,2,3},{3,1,3}},
+{{1,2,2},{1,3,2},{2,1,2},{2,2,2}},
+{{1,1,3},{2,1,3},{2,2,3},{3,2,3}},
+{{1,1,4},{2,1,4},{3,1,4},{4,1,4}},
+{{1,1,1},{1,2,1},{1,3,1},{1,4,1}},
+{{1,1,2},{1,2,2},{2,1,2},{2,2,2}}
+};
+
+int box[4][3];
+
+void create(row* now,row* old,int i,int m,int n)
+{
+	if(i==0)
+	{
+		now->count = 0;
+		now->array = get_array(now->array,n);
+		now->seq = i+1;
+		row_heighest = now;
+	}
+	else if(i==m-1)
+	{
+		now->count = 0;
+		now->array = get_array(now->array,n);
+		now->seq = i+1;
+		old->down = now;
+		now->up = old;
+		row_base = now;
+	}
+	else
+	{
+		now->count = 0;
+		now->seq = i+1;
+		now->array = get_array(now->array,n);
+		now->up = old;
+		old->down = now;
+	}
+}
+void boom()
+{
+	row *temper = row_base;
+	for(int i=0 ; i<m ; i++)
+	{
+		if(temper->count == n)
+		{
+			for(int j=0 ; j<n ; j++)
+			{
+				temper->array[j] = 0;
+				land[j] = 0;
+			}
+			temper->count = 0;
+			if(i==0)
+			{
+				row_heighest->up = temper;
+				temper->down = row_heighest;
+				row_base = temper->up;
+				row_heighest = temper;
+			}
+			else if(i==m-1)
+			{
+				row_heighest = temper;
+			}
+			else
+			{
+				row_heighest->up = temper;
+				temper->up->down = temper->down;
+				temper->down->up = temper->up;
+				temper->down = row_heighest;
+				row_heighest = temper;
+			}
+		}
+		temper = temper->up;
+	}
+	temper = row_base;
+	for(int i=0 ; i<m ; i++)
+	{
+		for(int j=0 ; j<n ; j++)
+		{
+			if(temper->array[j] == 1)
+			{
+				land[j] = i+1;
+			}
+		}
+		temper = temper->up;
+	}
+}
+int gameover();
+void print(row* heighest,int counter);
+int collide(int box[4][3],row* temper,int position,int counter)
+{
+	row* now = temper;
+	int check = 1;
+	int _count = 0;
+		for(int i=0 ; i<4 ; i++)
+		{
+			if(box[i][0] == 1)
+			{
+				if(now->array[box[i][1]-1] || counter <= land[box[i][1]-1])
+				{
+					check = 0;
+					return check;
+				}
+			}
+			else if(box[i][0] == 2)
+			{
+				if(counter >= m)
+				{
+					check = 2;
+					break;
+				}
+				else
+				{
+					if(now->up->array[box[i][1]-1] || counter <= land[box[i][1]-1]-1)
+					{
+						check = 0;
+						return check;
+					}
+				}
+			}
+			else if(box[i][0] == 3)
+			{
+				if(counter >= m-1)
+				{
+					check = 2;
+					break;
+				}
+				else
+				{
+					if(now->up->up->array[box[i][1]-1] || counter <= land[box[i][1]-1]-2)
+					{
+						check = 0;
+						return check;
+					}
+				}
+				
+			}
+			else if(box[i][0] == 4)
+			{
+				if(counter >= m-2)
+				{
+					check = 2;
+					break;
+				}
+				else
+				{
+					if(now->up->up->up->array[box[i][1]-1])
+					{
+						check = 0;
+						return check;
+					}
+				}
+				
+			}
+			else
+			{
+				check = 2;
+				return check;
+			}
+		}
+	for(int j=0 ; j<4 ; j++)
+	{
+		if(box[j][0] == 1 && m-land[box[j][1]-1] > 0)
+		{
+			cout<<"第一行"<<now->count<<endl;
+			
+			now->array[box[j][1]-1]=1;
+			now->count+=1;
+			land[box[j][1]-1] = counter ;
+			if(now->count == n)
+			{
+				cout<<"可在掉下來一層"<<"j="<<j<<endl; 
+				now = row_base;
+				for(int i=0 ; i<land[box[j][1]-1] ; i++)
+				{
+					if(i == land[box[j][1]-1]-1)
+					{
+						if(land[box[j][1]-1] == m)
+						{
+							cout<<"continue"<<endl;
+							continue;
+						}
+					}
+					now = now->up;
+				}
+				print(row_heighest,0);
+				boom();
+				print(row_heighest,0);
+				for(int i = j; i<4 ; i++)
+				{
+					box[i][0] -= 1;
+				}
+				check = 1;
+			}	
+		}
+		else if(box[j][0] == 2 && m-land[box[j][1]-1] > 0)
+		{
+			cout<<"第二行"<<endl;
+			now->up->array[box[j][1]-1] = 1;
+			now->up->count+=1;
+			land[box[j][1]-1] = counter + 1;
+			if(now->up->count == n)
+			{
+				cout<<"可在掉下來一層"<<"j="<<j<<endl; 
+				now = row_base;
+				for(int i=0 ; i<land[box[j][1]-1] ; i++)
+				{
+					cout<<"*******"<<now->count<<endl;
+					if(i == land[box[j][1]-1]-1)
+					{
+						if(land[box[j][1]-1] == m)
+						{
+							continue;
+						}
+					}
+					now = now->up;
+				}
+				print(row_heighest,0);
+				boom();
+				print(row_heighest,0);
+				for(int i = j; i<4 ; i++)
+				{
+					box[i][0] -= 2;
+				}
+				check = 1;
+			}
+		}
+		else if(box[j][0] == 3 && m-land[box[j][1]-1] > 0)
+		{
+			cout<<"第三行"<<endl;
+			now->up->up->array[box[j][1]-1] = 1;
+			now->up->up->count+=1;
+			land[box[j][1]-1] = counter + 2;
+			if(now->up->up->count == n)
+			{
+				cout<<"可在掉下來一層"<<"j="<<j<<endl; 
+				now = row_base;
+				for(int i=0 ; i<land[box[j][1]-1] ; i++)
+				{
+					if(i == land[box[j][1]-1]-1)
+					{
+						if(land[box[j][1]-1] == m)
+						{
+							continue;
+						}
+					}
+					now = now->up;
+				}
+				print(row_heighest,0);
+				boom();
+				print(row_heighest,0);
+				for(int i = j; i<4 ; i++)
+				{
+					box[i][0] -= 3;
+				}
+				check = 1;
+			}
+		}
+		else if(box[j][0] == 4 && m-land[box[j][1]-1] > 0)
+		{
+			cout<<"第四行"<<endl;
+			now->up->up->up->array[box[j][1]-1] = 1;
+			now->up->up->up->count+=1;
+			land[box[j][1]-1] = counter + 3;
+		}
+		
+	}
+	return check;
+}
+int judge(string block_seq)
+{
+	if(block_seq[0] == 'T' )
+	{
+		if(block_seq[1] == '1')
+			return 0;
+		else if(block_seq[1] == '2')
+			return 1;
+		else if(block_seq[1] == '3')
+			return 2;
+		else if(block_seq[1] == '4')
+			return 3;
+	}
+	else if(block_seq[0] == 'L')
+	{
+		if(block_seq[1] == '1')
+			return 4;
+		else if(block_seq[1] == '2')
+			return 5;
+		else if(block_seq[1] == '3')
+			return 6;
+		else if(block_seq[1] == '4')
+			return 7;
+	}
+	else if(block_seq[0] == 'J')
+	{
+		if(block_seq[1] == '1')
+			return 8;
+		else if(block_seq[1] == '2')
+			return 9;
+		else if(block_seq[1] == '3')
+			return 10;
+		else if(block_seq[1] == '4')
+			return 11;
+	}
+	else if(block_seq[0] == 'S')
+	{
+		if(block_seq[1] == '1')
+			return 12;
+		else if(block_seq[1] == '2')
+			return 13;
+	}
+	else if(block_seq[0] == 'Z')
+	{
+		if(block_seq[1] == '1')
+			return 14;
+		else if(block_seq[1] == '2')
+			return 15;
+	}
+	else if(block_seq[0] == 'I')
+	{
+		if(block_seq[1] == '1')
+			return 16;
+		else if(block_seq[1] == '2')
+			return 17;
+	}
+	else if(block_seq[0] == 'O')
+		return 18;
+}
+ /* 
+void print(row* heighest,int counter)
+{
+	for(int j=0 ; j<m ; j++)
+	{
+		for(int i=0 ; i<n ; i++)
+		{
+			cout<<heighest->array[i];
+		}
+		cout<<" "<<heighest->count;	
+		cout<<endl;
+		heighest = heighest->down;
+	}
+	
+	for(int i=0 ; i<n ; i++)
+	{
+		cout<<land[i];
+	}
+	cout<<endl;
+	
+}*/ 
+void print(row* heighest,int counter)
+{
+	char out[] = "tetris.final";
+	fstream fout;
+	fout.open(out,ios::out);
+	for(int j=0 ; j<m ; j++)
+	{
+		for(int i=0 ; i<n ; i++)
+		{
+			fout<<heighest->array[i];
+			
+		}	
+		fout<<endl;
+		heighest = heighest->down;
+		
+	}
+	
+}
+int gameover()
+{
+	cout<<"Game over"<<endl;
+	cout<<endl;
+	print(row_heighest,0);
+	return 0;
+}
+
+int main()
+{
+	fstream file("tetris.data");
+	int size_map[3];
+	file>>m>>n;
+	cout<<m<<" "<<n<<endl;
+	string str;
+	row *old;
+	for(int i=0 ; i<m ; i++)
+	{
+		row *row_now = new row;
+		create(row_now,old,i,m,n);
+		old = row_now;
+	}
+	int check = 1;
+	while(check)
+	{
+		string block_seq;
+		int position;
+		int box_id;
+		int next_line = 0;
+		file>>block_seq;
+		cout<<block_seq;
+		if(block_seq[0] == 'E')
+		{
+			check = 0;
+			cout<<endl;
+			print(row_heighest,0);
+			continue;
+		}
+		file>>position;
+		cout<<position;
+		box_id = judge(block_seq);
+		for(int i=0 ; i<4 ; i++)
+		{
+			for(int j=0 ; j>3 ; j++)
+			{
+				box[i][j] = 0;
+			}
+		}
+		for(int i=0 ; i<4 ; i++)
+		{
+			for(int j=0 ; j<3 ; j++)
+			{
+				box[i][j] = BOX[box_id][i][j];
+			}
+		}
+		for(int i=0 ; i<4 ; i++)
+		{
+			box[i][1] += (position-1);
+		}
+		int index = 1;
+		row* temper = row_base;
+		while(next_line == 0)
+		{
+			next_line = collide(box,temper,position,index);
+			index+=1;
+			temper = temper->up;
+		}
+		if(next_line == 2)
+		{
+			
+			return gameover();
+		}
+		else if(next_line == 3)
+		{
+			row_heighest = row_heighest->down->up;
+		}
+		cout<<endl;
+		boom();
+		print(row_heighest,0);
+	}
+	return 0;
+}
